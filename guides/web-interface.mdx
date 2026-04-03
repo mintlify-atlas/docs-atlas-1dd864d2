@@ -1,0 +1,74 @@
+---
+title: "Web interface"
+description: "Browse, search, preview, and download KML files at mappipeline.com"
+---
+
+The MapPipeline web interface at [mappipeline.com](https://mappipeline.com) lets you explore all available KML layers without installing any software. You can search for layers by name, preview them on an interactive map, copy their import URL, or download the file directly.
+
+<Steps>
+  <Step title="Open the file browser">
+    Go to [mappipeline.com](https://mappipeline.com) and scroll down to the **Available Files** section, or click the **Browse Files** button in the hero.
+
+    The page loads the file manifest from the repository and displays all available KML layers as cards. The total file count and last updated timestamp are shown on the page.
+  </Step>
+  <Step title="Search for a layer">
+    Type in the search box above the file list to filter cards by name. The search filters in real time as you type — only cards whose file names match your query remain visible.
+
+    For example, typing `safe` will show the SafeAirspace Warnings layer and hide others.
+  </Step>
+  <Step title="Read the card details">
+    Each KML card displays the following information:
+
+    | Field | Description |
+    |-------|-------------|
+    | **Name** | Human-readable layer name (e.g., "SafeAirspace Warnings") |
+    | **Description** | Short summary of what the layer contains |
+    | **Source** | The original data provider, linked to their website |
+    | **File size** | Size of the KML file in KB or MB |
+    | **Last updated** | Date the file was last committed to the repository |
+  </Step>
+  <Step title="Choose an action">
+    Each card has three buttons:
+
+    - **Preview** — Opens the map preview modal to visualize the layer on an interactive map
+    - **Download** — Saves the `.kml` file to your computer
+    - **Copy URL** — Copies the raw GitHub URL to your clipboard, ready to paste into a GIS application
+
+    A toast notification confirms when a URL has been copied successfully.
+  </Step>
+</Steps>
+
+## Map preview
+
+Clicking **Preview** on a KML card opens a full-screen modal with an interactive map. The preview is built with [Leaflet](https://leafletjs.com) and rendered using [leaflet-omnivore](https://github.com/mapbox/leaflet-omnivore), which parses the KML and draws its features on an OpenStreetMap base layer.
+
+When the KML loads:
+
+- The map automatically fits its viewport to the bounds of all features in the file
+- Polygons and points are rendered with their KML-defined styles
+- Clicking a feature opens a popup showing the feature's name and description
+
+You can pan and zoom the map freely. Press **Escape** or click outside the modal to close it.
+
+<Warning>
+  The preview loads the KML file directly from its raw GitHub URL in your browser. Some browsers may block this request due to CORS (Cross-Origin Resource Sharing) restrictions, depending on the KML's headers. If the preview fails to load, an error message appears in the map area. In this case, use **Download** to get the file and open it in a desktop application.
+</Warning>
+
+## Last updated timestamp
+
+At the bottom of the file list, the page shows the time the file manifest was last generated. This reflects when the most recent automated update ran — not the last time any individual KML file changed.
+
+Individual file cards show their own **last updated** date, which reflects the last commit to that specific KML file in the repository.
+
+<Note>
+  Most layers are updated hourly via GitHub Actions. The Israel Rocket Alerts layer updates every 5 minutes. The timestamps shown on the web interface reflect the actual last-commit time from the repository manifest.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Importing KML files" icon="file-import" href="/guides/importing-kml">
+    URL import vs. download — which method to use and why
+  </Card>
+  <Card title="GIS application guides" icon="map" href="/guides/gis-applications">
+    Step-by-step import instructions for Google Earth, QGIS, ArcGIS, ForeFlight, and Garmin Pilot
+  </Card>
+</CardGroup>

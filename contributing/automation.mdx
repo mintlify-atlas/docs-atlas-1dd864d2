@@ -1,0 +1,212 @@
+---
+title: "Automation with GitHub Actions"
+description: "How MapPipeline uses GitHub Actions to keep KML files up to date automatically"
+---
+
+MapPipeline uses GitHub Actions to run update scripts on a schedule, commit the resulting KML files back to the repository, and make them immediately available via raw GitHub URLs. No external infrastructure is required.
+
+## Workflows overview
+
+There are four workflows in `.github/workflows/`:
+
+| File | Trigger | Script | Purpose |
+|------|---------|--------|---------|
+| `update-kml-auto.yml` | Hourly cron (`15 * * * *`) | `update-kml.js` | SafeAirspace aviation warnings |
+| `update-kml.yml` | Manual (`workflow_dispatch`) | `update-kml.js` | Same as above, on demand |
+| `update-alerts.yml` | `workflow_dispatch` (triggered by external cron) | `update-alerts.js` | Israel rocket alerts every 5 minutes |
+| `update-mobilize.yml` | Daily cron (`0 6 * * *`) + manual | `update-mobilize.js` | ICE protest events from Mobilize.us |
+
+<Note>
+  `update-alerts.yml` uses `workflow_dispatch` rather than a GitHub cron because GitHub's minimum cron interval is 5 minutes and GitHub Actions cron scheduling can lag. The workflow is triggered by an external cron service (such as cron-job.org) via the GitHub API to achieve reliable 5-minute polling.
+</Note>
+
+## How workflows run
+
+All workflows follow the same four-step pattern: check out the repo, set up Node.js, run the update script, then commit only if files changed.
+
+### update-kml.yml — manual trigger
+
+```yaml
+name: Update KML Files
+
+on:
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-kml:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update KML files
+        run: node scripts/update-kml.js
+
+      - name: Generate manifest
+        run: node scripts/generate-manifest.js
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add kmls/ kml-manifest.json
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update KML files - $(date -u +"%Y-%m-%d %H:%M UTC")"
+            git pull --rebase origin main
+            git push
+          fi
+```
+
+## Key implementation details
+
+### Conditional commit
+
+The commit step checks both unstaged and staged diffs before committing. If neither the `kmls/` files nor `kml-manifest.json` changed (e.g., the upstream data source returned identical content), no commit is made:
+
+```bash
+if git diff --quiet && git diff --staged --quiet; then
+  echo "No changes to commit"
+else
+  git commit -m "Update KML files - $(date -u +"%Y-%m-%d %H:%M UTC")"
+  git pull --rebase origin main
+  git push
+fi
+```
+
+The `git pull --rebase origin main` before `git push` prevents conflicts when multiple workflows run close together and both try to push to `main`.
+
+### GITHUB_REPOSITORY environment variable
+
+`generate-manifest.js` reads `GITHUB_REPOSITORY` to construct the correct raw URLs for each KML file:
+
+```javascript
+// From scripts/generate-manifest.js
+const repoFullName = process.env.GITHUB_REPOSITORY || 'TannerTunstall/MapPipeline';
+const baseURL = `https://raw.githubusercontent.com/${repoFullName}/main/kmls`;
+```
+
+GitHub Actions sets `GITHUB_REPOSITORY` automatically to `owner/repo`. Some workflows pass it explicitly to ensure it is available:
+
+```yaml
+- name: Generate manifest
+  run: node scripts/generate-manifest.js
+  env:
+    GITHUB_REPOSITORY: ${{ github.repository }}
+```
+
+### `contents: write` permission
+
+All workflows that commit require the `contents: write` permission on the `GITHUB_TOKEN`. This is set at the job level:
+
+```yaml
+permissions:
+  contents: write
+```
+
+Without this, the `git push` step will fail with a 403 error.
+
+## Adding a workflow for a new source
+
+<Steps>
+  <Step title="Choose a trigger">
+    Decide how often your data source needs to be polled. Use a cron schedule for regular intervals, or `workflow_dispatch` if you want manual control or will trigger from an external scheduler.
+
+    ```yaml
+    on:
+      schedule:
+        - cron: '0 * * * *'   # Every hour at :00
+      workflow_dispatch:        # Also allow manual runs
+    ```
+  </Step>
+
+  <Step title="Copy the base workflow structure">
+    Create `.github/workflows/update-my-layer.yml` using the pattern below. Replace `update-my-layer.js` with your script name and update the commit message:
+
+    ```yaml
+    name: Update My Layer
+
+    on:
+      schedule:
+        - cron: '0 * * * *'
+      workflow_dispatch:
+
+    jobs:
+      update-my-layer:
+        runs-on: ubuntu-latest
+        permissions:
+          contents: write
+
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+
+          - name: Update my layer
+            run: node scripts/update-my-layer.js
+
+          - name: Generate manifest
+            run: node scripts/generate-manifest.js
+            env:
+              GITHUB_REPOSITORY: ${{ github.repository }}
+
+          - name: Commit and push if changed
+            run: |
+              git config --global user.name 'GitHub Action'
+              git config --global user.email 'action@github.com'
+              git add kmls/ kml-manifest.json
+              if git diff --quiet && git diff --staged --quiet; then
+                echo "No changes to commit"
+              else
+                git commit -m "Update my layer - $(date -u +"%Y-%m-%d %H:%M UTC")"
+                git pull --rebase origin main
+                git push
+              fi
+    ```
+  </Step>
+
+  <Step title="Add environment variables if needed">
+    If your script reads configuration from environment variables (as `update-mobilize.js` does), pass them in the workflow step via `env`:
+
+    ```yaml
+    - name: Update my layer
+      env:
+        MY_API_KEY: ${{ secrets.MY_API_KEY }}
+        MY_CONFIG_VAR: ${{ vars.MY_CONFIG_VAR }}
+      run: node scripts/update-my-layer.js
+    ```
+
+    Store secrets in **Settings → Secrets and variables → Actions** in the repository. Use `secrets` for sensitive values and `vars` for non-sensitive configuration.
+  </Step>
+
+  <Step title="Trigger for high-frequency sources">
+    For sources that update more frequently than GitHub's minimum 5-minute cron interval, use `workflow_dispatch` and trigger the workflow from an external cron service via the GitHub REST API:
+
+    ```bash
+    curl -X POST \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      https://api.github.com/repos/TannerTunstall/MapPipeline/actions/workflows/update-my-layer.yml/dispatches \
+      -d '{"ref":"main"}'
+    ```
+
+    This is the same approach used by `update-alerts.yml` to achieve 5-minute polling for the Israel rocket alerts layer.
+  </Step>
+</Steps>
+
+<Tip>
+  Run your workflow manually from the **Actions** tab in GitHub (using `workflow_dispatch`) before relying on the scheduled trigger. This lets you verify the script runs cleanly in the GitHub Actions environment without waiting for the next scheduled run.
+</Tip>

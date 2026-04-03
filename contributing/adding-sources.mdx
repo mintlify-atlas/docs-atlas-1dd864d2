@@ -1,0 +1,234 @@
+---
+title: "Adding new data sources"
+description: "How to add a new KML data source to the MapPipeline pipeline"
+---
+
+Every KML layer in MapPipeline follows the same pattern: a Node.js script fetches data from an external source, transforms it into a valid KML string, and writes the result to the `kmls/` directory. The file is then picked up by `generate-manifest.js` and served via GitHub raw URLs.
+
+There are two patterns depending on whether your source already produces KML.
+
+## Pattern 1: Fetching an existing KML from a URL
+
+If your data source already exposes a KML file at a stable URL, use `fetchUrl()` from `update-kml.js` to download it and write it to `kmls/`.
+
+```javascript
+// From scripts/update-kml.js
+function fetchUrl(url) {
+    return new Promise((resolve, reject) => {
+        const protocol = url.startsWith('https') ? https : require('http');
+        const options = {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
+        };
+
+        protocol.get(url, options, (res) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+                return fetchUrl(res.headers.location).then(resolve).catch(reject);
+            }
+            if (res.statusCode !== 200) {
+                reject(new Error(`Failed to fetch ${url}: ${res.statusCode}`));
+                return;
+            }
+
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+            res.on('error', reject);
+        }).on('error', reject);
+    });
+}
+```
+
+`fetchUrl()` handles HTTP redirects automatically. Once you have the raw KML string, write it directly to the output path:
+
+```javascript
+const kmlContent = await fetchUrl('https://example.com/my-layer.kml');
+fs.writeFileSync(path.join(KML_DIR, 'my-layer.kml'), kmlContent, 'utf8');
+```
+
+## Pattern 2: Generating KML from a non-KML data source
+
+When the source returns JSON (or HTML that you parse), you need to fetch the data and build a KML document from scratch using template literals. This is the pattern used by `update-alerts.js` and `update-kml.js`.
+
+### Helper functions
+
+Three helpers are available across the scripts:
+
+**`fetchJson(url)`** — fetches a URL and parses the response as JSON (`update-alerts.js`):
+
+```javascript
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, {
+            headers: {
+                'User-Agent': 'MapPipeline/1.0',
+                'Accept': 'application/json'
+            }
+        }, (res) => {
+            if (res.statusCode !== 200) {
+                reject(new Error(`HTTP ${res.statusCode}`));
+                return;
+            }
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)); }
+                catch (e) { reject(e); }
+            });
+            res.on('error', reject);
+        }).on('error', reject);
+    });
+}
+```
+
+**`escapeXml(str)`** — escapes `&`, `<`, `>`, `"`, and `'` for safe use in XML attributes and text nodes (available in all scripts):
+
+```javascript
+function escapeXml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+```
+
+**`coordsToKml(coords)`** — recursively converts a GeoJSON coordinate array to a KML coordinate string (`update-kml.js`):
+
+```javascript
+function coordsToKml(coords) {
+    if (typeof coords[0] === 'number') {
+        return `${coords[0]},${coords[1]},0`;
+    }
+    return coords.map(c => coordsToKml(c)).join(' ');
+}
+```
+
+### Complete minimal example
+
+The following is a full standalone script that fetches JSON from a hypothetical API, generates a KML document with `Placemark` elements, and writes it to `kmls/my-layer.kml`. You can use this as a starting template.
+
+```javascript
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+
+const KML_DIR = path.join(__dirname, '..', 'kmls');
+
+if (!fs.existsSync(KML_DIR)) {
+    fs.mkdirSync(KML_DIR, { recursive: true });
+}
+
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'MapPipeline/1.0' } }, (res) => {
+            if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(JSON.parse(data)));
+            res.on('error', reject);
+        }).on('error', reject);
+    });
+}
+
+function escapeXml(text) {
+    return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+async function updateMyLayer() {
+    const timestamp = new Date().toISOString();
+
+    // 1. Fetch data from an API
+    const items = await fetchJson('https://api.example.com/locations');
+
+    // 2. Build KML string
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>My Layer</name>
+    <description>Example layer. Updated: ${timestamp}</description>
+`;
+
+    for (const item of items) {
+        kml += `
+    <Placemark>
+      <name>${escapeXml(item.name)}</name>
+      <description><![CDATA[<p>${escapeXml(item.description)}</p>]]></description>
+      <ExtendedData>
+        <Data name="Source"><value>api.example.com</value></Data>
+        <Data name="LastUpdate"><value>${timestamp}</value></Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>${item.lng},${item.lat},0</coordinates>
+      </Point>
+    </Placemark>
+`;
+    }
+
+    kml += `  </Document>
+</kml>`;
+
+    // 3. Write to kmls/ directory
+    fs.writeFileSync(path.join(KML_DIR, 'my-layer.kml'), kml, 'utf8');
+    console.log(`✓ my-layer.kml updated (${items.length} placemarks)`);
+}
+
+updateMyLayer().catch(err => {
+    console.error('Update failed:', err.message);
+    process.exit(1);
+});
+```
+
+## Wiring everything up
+
+<Steps>
+  <Step title="Create your update script">
+    Save your script as `scripts/update-my-layer.js`. If your new layer fits logically inside the existing `update-kml.js` (e.g., another aviation data source), add a new function there and call it from `updateKMLFiles()`. For independently scheduled sources, a separate script is cleaner.
+  </Step>
+
+  <Step title="Run generate-manifest.js">
+    After your script writes to `kmls/`, run `generate-manifest.js` to regenerate `kml-manifest.json`:
+
+    ```bash
+    node scripts/update-my-layer.js
+    node scripts/generate-manifest.js
+    ```
+
+    The manifest is what the web interface reads to discover available KML files and their raw URLs.
+  </Step>
+
+  <Step title="Add metadata to script.js">
+    The web interface reads a `KML_METADATA` object in `script.js` to show display names, descriptions, and source attribution in the layer browser. Add an entry keyed by the KML filename:
+
+    The actual field names used by `script.js` are `displayName`, `description`, `source`, `sourceUrl`, and `license`:
+
+    ```javascript
+    // In script.js — KML_METADATA object
+    'my-layer.kml': {
+        displayName: 'My Layer',
+        description: 'Short description shown in the layer browser.',
+        source: 'api.example.com',
+        sourceUrl: 'https://api.example.com',
+        license: 'Fair use — public data'
+    }
+    ```
+  </Step>
+
+  <Step title="Add a workflow">
+    Create a GitHub Actions workflow to run your script on a schedule. See [Automation with GitHub Actions](/contributing/automation) for a full example and instructions.
+  </Step>
+</Steps>
+
+<Tip>
+  Test your script locally before wiring up automation. Run it with `node scripts/update-my-layer.js` and open the resulting `.kml` file in Google Earth or QGIS to verify the output looks correct.
+</Tip>

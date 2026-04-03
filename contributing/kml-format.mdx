@@ -1,0 +1,246 @@
+---
+title: "KML format reference"
+description: "KML structure, styling conventions, and best practices used in MapPipeline"
+---
+
+All KML files in MapPipeline follow the same structural conventions. This page documents the patterns used across `update-kml.js`, `update-alerts.js`, and `update-mobilize.js` so that new sources are consistent with existing ones.
+
+## Document structure
+
+Every KML file is a valid KML 2.2 document with a root `<Document>` element. Styles are declared at the top of the document, followed by `<Folder>` elements that group related `<Placemark>` elements.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Layer Name</name>
+    <description>Short description. Updated: 2026-04-03T00:00:00.000Z</description>
+
+    <!-- Styles -->
+    <Style id="my-style">
+      ...
+    </Style>
+
+    <!-- Folders / Placemarks -->
+    <Folder>
+      <name>Category Name</name>
+      <Placemark>
+        ...
+      </Placemark>
+    </Folder>
+
+  </Document>
+</kml>
+```
+
+Always include a timestamp in the document `<description>` so consumers can see when the data was last refreshed.
+
+## Styling
+
+Styles are declared with `<Style id="...">` inside `<Document>` and referenced from each `<Placemark>` using `<styleUrl>#id</styleUrl>`.
+
+### PolyStyle, LineStyle, and BalloonStyle
+
+The SafeAirspace layer (`update-kml.js`) uses this three-part style block for each risk level:
+
+```xml
+<Style id="level1">
+  <PolyStyle>
+    <color>990000ff</color>
+    <outline>1</outline>
+  </PolyStyle>
+  <LineStyle>
+    <color>ff0000ff</color>
+    <width>2</width>
+  </LineStyle>
+  <BalloonStyle>
+    <bgColor>ff1a1a2e</bgColor>
+    <textColor>ffffffff</textColor>
+  </BalloonStyle>
+</Style>
+```
+
+- `<PolyStyle>` sets the polygon fill color and whether to draw an outline.
+- `<LineStyle>` sets the outline (border) color and width.
+- `<BalloonStyle>` controls the popup background and text color when a user clicks a feature.
+
+### Color format: AABBGGRR
+
+<Note>
+  KML colors are in `AABBGGRR` order — alpha, blue, green, red — which is the reverse of the familiar HTML `#RRGGBBAA`. The first two hex digits are the alpha channel (opacity): `ff` is fully opaque, `00` is fully transparent.
+</Note>
+
+### Risk level color table
+
+The `riskColors` object in `update-kml.js` defines the fill and outline colors for each SafeAirspace risk level:
+
+| Level | Label | Fill (`AABBGGRR`) | Outline (`AABBGGRR`) | Visual |
+|-------|-------|-------------------|----------------------|--------|
+| 1 | Do Not Fly | `990000ff` | `ff0000ff` | Red, 60% opacity |
+| 2 | High Risk | `990080ff` | `ff0080ff` | Orange, 60% opacity |
+| 3 | Caution | `9900ffff` | `ff00ffff` | Yellow, 60% opacity |
+| 4 | Monitor | `00000000` | `ff00ff00` | Transparent fill, green outline |
+
+The Israel alerts layer uses a similar age-based color scheme:
+
+| Style ID | Age | Fill | Outline |
+|----------|-----|------|---------|
+| `poly-critical` | < 5 min | `600000ff` | `ff0000ff` |
+| `poly-recent` | < 30 min | `400080ff` | `ff0080ff` |
+| `poly-moderate` | < 2 hours | `3000ffff` | `ff00ffff` |
+| `poly-old` | < 4 hours | `20808080` | `ff808080` |
+
+## Geometry types
+
+### Point
+
+Used in `update-mobilize.js` for event locations. Coordinates are `lng,lat,altitude`:
+
+```xml
+<Point>
+    <coordinates>-87.6298,41.8781,0</coordinates>
+</Point>
+```
+
+### Polygon
+
+Used in `update-alerts.js` for alert zone boundaries and in `update-kml.js` for country polygons. The outer ring is required; inner rings represent holes in the polygon.
+
+From `geometryToKml()` in `update-kml.js`:
+
+```xml
+<Polygon>
+  <outerBoundaryIs><LinearRing><coordinates>
+    -87.6298,41.8781,0 -87.6300,41.8790,0 ...
+  </coordinates></LinearRing></outerBoundaryIs>
+  <innerBoundaryIs><LinearRing><coordinates>
+    ...
+  </coordinates></LinearRing></innerBoundaryIs>
+</Polygon>
+```
+
+### MultiGeometry
+
+Used when a single `<Placemark>` covers multiple disconnected polygons — for example, a regional advisory covering several countries. From `geometryToKml()`:
+
+```xml
+<MultiGeometry>
+  <Polygon>
+    <outerBoundaryIs><LinearRing><coordinates>
+      ...
+    </coordinates></LinearRing></outerBoundaryIs>
+  </Polygon>
+  <Polygon>
+    <outerBoundaryIs><LinearRing><coordinates>
+      ...
+    </coordinates></LinearRing></outerBoundaryIs>
+  </Polygon>
+</MultiGeometry>
+```
+
+The full `geometryToKml()` implementation handles `Polygon`, `MultiPolygon`, and inner boundary rings:
+
+```javascript
+function geometryToKml(geometry) {
+    let kml = '';
+
+    if (geometry.type === 'Polygon') {
+        kml += '        <Polygon>\n';
+        kml += '          <outerBoundaryIs><LinearRing><coordinates>\n';
+        kml += '            ' + coordsToKml(geometry.coordinates[0]) + '\n';
+        kml += '          </coordinates></LinearRing></outerBoundaryIs>\n';
+
+        for (let i = 1; i < geometry.coordinates.length; i++) {
+            kml += '          <innerBoundaryIs><LinearRing><coordinates>\n';
+            kml += '            ' + coordsToKml(geometry.coordinates[i]) + '\n';
+            kml += '          </coordinates></LinearRing></innerBoundaryIs>\n';
+        }
+        kml += '        </Polygon>\n';
+    } else if (geometry.type === 'MultiPolygon') {
+        kml += '        <MultiGeometry>\n';
+        for (const polygon of geometry.coordinates) {
+            kml += '          <Polygon>\n';
+            kml += '            <outerBoundaryIs><LinearRing><coordinates>\n';
+            kml += '              ' + coordsToKml(polygon[0]) + '\n';
+            kml += '            </coordinates></LinearRing></outerBoundaryIs>\n';
+            for (let i = 1; i < polygon.length; i++) {
+                kml += '            <innerBoundaryIs><LinearRing><coordinates>\n';
+                kml += '              ' + coordsToKml(polygon[i]) + '\n';
+                kml += '            </coordinates></LinearRing></innerBoundaryIs>\n';
+            }
+            kml += '          </Polygon>\n';
+        }
+        kml += '        </MultiGeometry>\n';
+    }
+
+    return kml;
+}
+```
+
+## Extended data
+
+`<ExtendedData>` attaches structured metadata to a `<Placemark>`. Use it for fields you want machine-readable but that don't belong in the display name or description. From `update-kml.js`:
+
+```xml
+<ExtendedData>
+  <Data name="RiskLevel"><value>1</value></Data>
+  <Data name="RiskLabel"><value>Do Not Fly</value></Data>
+  <Data name="ISO3"><value>IRQ</value></Data>
+  <Data name="Source"><value>SafeAirspace.net</value></Data>
+  <Data name="LastUpdate"><value>2026-04-03T12:00:00.000Z</value></Data>
+</ExtendedData>
+```
+
+`update-mobilize.js` uses the same pattern for event metadata:
+
+```xml
+<ExtendedData>
+    <Data name="EventID"><value>12345</value></Data>
+    <Data name="Organization"><value>Example Org</value></Data>
+    <Data name="LocationType"><value>exact</value></Data>
+</ExtendedData>
+```
+
+## Folder organization
+
+Group `<Placemark>` elements into `<Folder>` elements by category. This lets GIS applications and Google Earth display a tree of layers that users can toggle independently.
+
+In `update-kml.js`, countries are grouped by risk level:
+
+```javascript
+for (const level of [1, 2, 3, 4]) {
+    kml += `
+    <Folder>
+      <name>Level ${level} - ${riskLabels[level]} (${countries.length})</name>
+      <open>${level <= 2 ? 1 : 0}</open>
+    `;
+    // ... placemarks
+    kml += `    </Folder>\n`;
+}
+```
+
+Set `<open>1</open>` on a folder to expand it by default in the layer panel. Use this sparingly — only for high-priority folders such as risk level 1 (Do Not Fly) and level 2 (High Risk).
+
+## Best practices
+
+<Note>
+  Always escape XML special characters in any text you interpolate into a KML string. Use `escapeXml()` on every string that could contain `&`, `<`, `>`, `"`, or `'`. A single unescaped ampersand will produce invalid XML and may cause the entire file to fail to parse.
+</Note>
+
+<Tip>
+  Use CDATA sections for HTML content in `<description>` elements. This lets you embed formatted HTML (tables, links, styled `<div>` elements) without escaping every character:
+
+  ```xml
+  <description><![CDATA[
+    <h3>Location Name</h3>
+    <p>Last updated: 2026-04-03 12:00 UTC</p>
+    <p><a href="https://source.example.com">View source</a></p>
+  ]]></description>
+  ```
+
+  Text content in all other elements — `<name>`, `<Data><value>`, etc. — must still be escaped with `escapeXml()`.
+</Tip>
+
+<Tip>
+  Include attribution and a timestamp in the document-level `<description>`. Downstream users who import the KML directly into GIS software may not see any other metadata, so this is the most reliable place to surface the data source and freshness information.
+</Tip>

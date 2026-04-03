@@ -1,0 +1,115 @@
+---
+title: "Importing KML files"
+description: "How to import KML files via URL for live-updating layers, or download them for offline use"
+---
+
+KML (Keyhole Markup Language) is an XML-based format for expressing geographic annotations and visualizations. It is the native format of Google Earth and is supported by virtually every GIS application, flight planning tool, and mapping platform. MapPipeline serves all data in KML so you can import it directly into your existing tools without any conversion step.
+
+There are two ways to use a MapPipeline KML file: import it by URL so the layer updates automatically, or download it as a static file for offline use.
+
+## URL format
+
+Every KML file in MapPipeline is accessible at a permanent raw GitHub URL:
+
+```
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/<filename>.kml
+```
+
+For example, the SafeAirspace Warnings layer is at:
+
+```
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+```
+
+You can also copy any file's URL directly from the [web interface](https://mappipeline.com) using the **Copy URL** button on each card.
+
+## Choosing a method
+
+<Tabs>
+  <Tab title="URL import (recommended)">
+    Paste the raw URL directly into your GIS application. The application fetches the KML from GitHub each time it refreshes, so you always see the latest data without downloading a new file.
+
+    **When to use this approach:**
+    - You want your layer to reflect the most recent data automatically
+    - You are working with actively updated layers like aviation warnings or rocket alerts
+    - You have a stable internet connection while using the application
+
+    <Steps>
+      <Step title="Find the KML file">
+        Go to [mappipeline.com](https://mappipeline.com) and find the layer you want to use.
+      </Step>
+      <Step title="Copy the URL">
+        Click **Copy URL** on the KML card. The raw GitHub URL is copied to your clipboard.
+      </Step>
+      <Step title="Paste into your application">
+        Open your GIS application and use its network or URL import option. See [GIS Application Import Guides](/guides/gis-applications) for step-by-step instructions per application.
+      </Step>
+    </Steps>
+
+    <Note>
+      Layers imported by URL auto-update in place. When MapPipeline commits a new version of the KML file to the repository, your application will fetch the updated data on its next refresh — no action required on your part.
+    </Note>
+  </Tab>
+  <Tab title="Download (offline)">
+    Download the `.kml` file to your computer and open it locally. This gives you a static snapshot of the data at the time of download.
+
+    **When to use this approach:**
+    - You need to work offline or in a disconnected environment
+    - You want to archive a specific snapshot of the data
+    - Your application does not support network KML links
+
+    <Steps>
+      <Step title="Find the KML file">
+        Go to [mappipeline.com](https://mappipeline.com) and find the layer you want.
+      </Step>
+      <Step title="Download the file">
+        Click **Download** on the KML card. The `.kml` file is saved to your computer.
+      </Step>
+      <Step title="Open in your application">
+        Open the downloaded file in Google Earth, QGIS, ArcGIS, or any other KML-compatible application using **File → Open**.
+      </Step>
+    </Steps>
+
+    <Warning>
+      A downloaded file is a static snapshot. It will not reflect future updates to the layer. To get updated data, you need to download the file again.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## What is KML?
+
+KML is an open standard maintained by the Open Geospatial Consortium (OGC). A KML file is an XML document that describes geographic features — points, lines, polygons — along with styling, descriptions, and metadata.
+
+```xml
+<Placemark>
+  <name>Example region</name>
+  <description>Risk level: High</description>
+  <Polygon>
+    <outerBoundaryIs>
+      <LinearRing>
+        <coordinates>
+          -122.0,37.0,0 -121.0,37.0,0 -121.0,38.0,0 -122.0,38.0,0 -122.0,37.0,0
+        </coordinates>
+      </LinearRing>
+    </outerBoundaryIs>
+  </Polygon>
+</Placemark>
+```
+
+KML files from MapPipeline contain:
+
+- **Polygons and points** — geographic shapes that represent regions or locations
+- **Names and descriptions** — human-readable labels and details for each feature
+- **Styling** — colors and opacity that convey meaning (e.g., red for high-risk zones)
+- **Attribution** — source information embedded in the file
+
+KML is widely supported because it was the original format of Google Earth and has been standardized across the geospatial industry. Any application that works with geographic data almost certainly supports KML import.
+
+<CardGroup cols={2}>
+  <Card title="GIS application guides" icon="map" href="/guides/gis-applications">
+    Step-by-step import instructions for Google Earth, QGIS, ArcGIS, ForeFlight, and Garmin Pilot
+  </Card>
+  <Card title="Web interface" icon="globe" href="/guides/web-interface">
+    Browse, search, and preview layers at mappipeline.com before importing
+  </Card>
+</CardGroup>

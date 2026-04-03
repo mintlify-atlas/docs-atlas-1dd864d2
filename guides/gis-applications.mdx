@@ -1,0 +1,166 @@
+---
+title: "GIS application import guides"
+description: "Step-by-step instructions for importing KML layers into popular GIS and mapping applications"
+---
+
+Each MapPipeline KML file is available at a permanent raw URL you can paste directly into your application. Importing by URL means your layer updates automatically as MapPipeline publishes new data — you do not need to download or replace the file manually.
+
+The URL format for all KML files is:
+
+```
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/<filename>.kml
+```
+
+Copy any file's URL from the [web interface](https://mappipeline.com) using the **Copy URL** button.
+
+<Warning>
+  Some browser-based GIS tools cannot load KML files from external URLs due to CORS (Cross-Origin Resource Sharing) restrictions. If a browser-based tool fails to load a layer, use the **Download** option from the web interface and import the file locally, or switch to a desktop application.
+</Warning>
+
+<Tabs>
+  <Tab title="Google Earth Pro">
+    Google Earth Pro supports network links, which periodically re-fetch the KML from the URL and update the layer in place.
+
+    <Steps>
+      <Step title="Open the network link dialog">
+        In Google Earth Pro, go to **File → Open**.
+      </Step>
+      <Step title="Enter the KML URL">
+        In the file dialog, look for the **URL** or **Network Link** option. Paste the raw GitHub URL for the layer you want to import.
+
+        For example:
+        ```
+        https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+        ```
+      </Step>
+      <Step title="Confirm the import">
+        Click **Open**. Google Earth Pro fetches the KML and adds it to the **Places** panel in the sidebar.
+      </Step>
+      <Step title="Set a refresh interval (optional)">
+        Right-click the layer in the Places panel and select **Properties**. Under the **Refresh** tab, set a time-based refresh interval so the layer checks for updates automatically.
+      </Step>
+    </Steps>
+
+    <Tip>
+      If you save your Google Earth project (`.kmz`) after adding network link layers, the URLs are saved with it. Re-opening the project will re-fetch the latest data.
+    </Tip>
+  </Tab>
+  <Tab title="QGIS">
+    QGIS can load KML files directly over HTTP as a vector layer using the protocol source option.
+
+    <Steps>
+      <Step title="Open the Add Vector Layer dialog">
+        In QGIS, go to **Layer → Add Layer → Add Vector Layer**.
+      </Step>
+      <Step title="Select the Protocol source type">
+        In the dialog, set **Source Type** to **Protocol: HTTP(S), cloud, etc.**
+      </Step>
+      <Step title="Enter the KML URL">
+        In the **URI** field, paste the raw GitHub URL:
+        ```
+        https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+        ```
+        Set the **Protocol** dropdown to **HTTP/HTTPS**.
+      </Step>
+      <Step title="Add the layer">
+        Click **Add**. QGIS fetches the KML and adds it to the **Layers** panel. The layer is loaded into memory from the URL each session.
+      </Step>
+      <Step title="Style the layer (optional)">
+        Right-click the layer in the Layers panel and select **Properties → Symbology** to customize colors, opacity, and labels.
+      </Step>
+    </Steps>
+
+    <Note>
+      QGIS fetches the KML when you open the project or manually refresh the layer. It does not poll for updates in the background. To get the latest data, right-click the layer and select **Refresh**.
+    </Note>
+  </Tab>
+  <Tab title="ArcGIS Online / ArcGIS Pro">
+    Both ArcGIS Online and ArcGIS Pro support importing KML files from a URL path.
+
+    <Steps>
+      <Step title="Open the Add Data dialog">
+        In ArcGIS Online, click **Add** in the toolbar and select **Add Layer from Web**. In ArcGIS Pro, go to **Map → Add Data → Data From Path**.
+      </Step>
+      <Step title="Select KML as the layer type">
+        In ArcGIS Online, select **A KML File** from the type dropdown. In ArcGIS Pro, the type is detected automatically from the URL.
+      </Step>
+      <Step title="Enter the KML URL">
+        Paste the raw GitHub URL:
+        ```
+        https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+        ```
+      </Step>
+      <Step title="Add the layer">
+        Click **Add Layer** (ArcGIS Online) or **OK** (ArcGIS Pro). The KML features are rendered on your map.
+      </Step>
+    </Steps>
+
+    <Warning>
+      ArcGIS Online's KML layer support varies by browser and organization security settings. If the layer fails to load via URL, download the `.kml` file from the [web interface](https://mappipeline.com) and upload it directly to your ArcGIS Online content.
+    </Warning>
+  </Tab>
+  <Tab title="ForeFlight">
+    ForeFlight supports custom map layers that you can load from a KML URL. The layer appears as an overlay on sectional and IFR charts.
+
+    <Steps>
+      <Step title="Open Maps settings">
+        In ForeFlight, tap **Maps** in the bottom navigation bar, then tap the layer icon in the upper-right corner to open the Layer Manager.
+      </Step>
+      <Step title="Add a custom map layer">
+        Scroll to the bottom of the layer list and tap **Add Custom Map Layer**.
+      </Step>
+      <Step title="Enter the layer URL">
+        Tap **URL** and paste the raw GitHub URL for the KML file:
+        ```
+        https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+        ```
+        Give the layer a name (for example, "SafeAirspace Warnings") and tap **Done**.
+      </Step>
+      <Step title="Enable the layer">
+        Toggle the layer on in the Layer Manager. It will appear as an overlay on your ForeFlight maps.
+      </Step>
+    </Steps>
+
+    <Tip>
+      ForeFlight re-fetches KML layers when you open the app or manually pull down to refresh the layer list. For safety-critical data like aviation warnings, refresh before each flight to ensure you have current data.
+    </Tip>
+  </Tab>
+  <Tab title="Garmin Pilot">
+    Garmin Pilot supports custom KML overlays loaded from a URL through the Custom Layer feature.
+
+    <Steps>
+      <Step title="Open the Map Layer menu">
+        In Garmin Pilot, tap the **Map** tab, then tap the **Layers** icon to open the map layer options.
+      </Step>
+      <Step title="Navigate to custom layers">
+        Scroll down and tap **Custom Layers** to open the custom layer management screen.
+      </Step>
+      <Step title="Add a new layer">
+        Tap the **+** button to add a new custom layer.
+      </Step>
+      <Step title="Enter the KML URL">
+        Select **URL** as the source type, then paste the raw GitHub URL:
+        ```
+        https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+        ```
+        Enter a display name and tap **Save**.
+      </Step>
+      <Step title="Enable the layer">
+        Toggle the layer on from the Custom Layers list. It renders as an overlay on Garmin Pilot's moving map.
+      </Step>
+    </Steps>
+
+    <Warning>
+      Garmin Pilot's KML rendering capabilities are limited compared to desktop GIS applications. Complex polygons with many vertices may render slowly. If performance is an issue, use the downloaded file during preflight planning on a desktop application instead.
+    </Warning>
+  </Tab>
+</Tabs>
+
+<CardGroup cols={2}>
+  <Card title="Importing KML files" icon="file-import" href="/guides/importing-kml">
+    Learn the difference between URL import and downloading, and which to choose for your use case
+  </Card>
+  <Card title="Web interface" icon="globe" href="/guides/web-interface">
+    Browse and preview layers at mappipeline.com before importing
+  </Card>
+</CardGroup>

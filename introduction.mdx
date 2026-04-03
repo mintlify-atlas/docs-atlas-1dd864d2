@@ -1,0 +1,61 @@
+---
+title: "Introduction"
+description: "MapPipeline is an automatically updating KML repository that aggregates geospatial data from multiple sources and serves it for import into GIS software, flight planning tools, and mapping applications."
+---
+
+## What is MapPipeline?
+
+MapPipeline is a free, open-source service that continuously fetches geospatial data from various sources, converts it into KML format, and makes it available via direct URLs. You can import any layer directly into your preferred GIS software without managing the data pipeline yourself.
+
+KML files are updated on automated schedules — some hourly, some every 5 minutes — so your maps always reflect the latest data.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Import your first KML layer in under 2 minutes
+  </Card>
+  <Card title="Available Layers" icon="layer-group" href="/layers/overview">
+    Browse all available KML data layers
+  </Card>
+  <Card title="GIS Applications" icon="map" href="/guides/gis-applications">
+    Import guides for Google Earth, QGIS, ArcGIS, and more
+  </Card>
+  <Card title="Web Interface" icon="globe" href="/guides/web-interface">
+    Browse and preview layers at mappipeline.com
+  </Card>
+</CardGroup>
+
+## How it works
+
+```
+Data Sources  →  GitHub Actions  →  KML Files  →  GIS Software
+(APIs, sites)    (hourly cron)      (GitHub repo)   (direct URL import)
+```
+
+1. **GitHub Actions** runs on a schedule to fetch the latest data from external sources
+2. **Node.js scripts** scrape, parse, and transform that data into valid KML format
+3. **KML files** are committed to the repository with updated content
+4. **Raw GitHub URLs** serve files directly — paste the URL into any GIS application to get live-updating data
+
+## Key features
+
+- **Auto-updating layers** — Aviation warnings, rocket alerts, and event data refreshed automatically
+- **Direct URL import** — Each KML file has a permanent URL you can bookmark in your GIS software
+- **Interactive preview** — The [web interface](https://mappipeline.com) lets you preview any layer on an interactive map before importing
+- **No account required** — All KML files are publicly accessible with no API key or login
+- **Free hosting** — Powered by GitHub and Cloudflare Pages at zero cost
+
+## Current layers
+
+| Layer | Source | Update Frequency |
+|-------|--------|-----------------|
+| SafeAirspace Warnings | SafeAirspace.net | Hourly |
+| Israel Rocket Alerts | rocketalert.live | Every 5 minutes |
+| ICE Protest Events | Mobilize.us | Hourly |
+
+<Note>
+  More layers are added over time. Check the [Available Layers](/layers/overview) page for the current list.
+</Note>
+
+## Disclaimer
+
+Data provided for informational purposes only. Always verify with official sources before making decisions. MapPipeline is not affiliated with any data source.

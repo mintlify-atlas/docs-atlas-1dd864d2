@@ -1,0 +1,69 @@
+{
+  "projectType": "saas",
+  "projectName": "MapPipeline",
+  "projectDescription": "An automatically updating KML repository with a modern web interface that aggregates geospatial data from multiple sources and serves it for import into GIS software, flight planning tools, and mapping applications.",
+  "theme": "luma",
+  "primaryColor": "#2563EB",
+  "lightColor": "#DBEAFE",
+  "darkColor": "#1E3A8A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Using KML Files",
+            "pages": [
+              "guides/importing-kml",
+              "guides/gis-applications",
+              "guides/web-interface"
+            ]
+          },
+          {
+            "group": "Available Layers",
+            "pages": [
+              "layers/overview",
+              "layers/safeairspace-warnings",
+              "layers/israel-alerts",
+              "layers/mobilize-events"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/adding-sources",
+              "contributing/automation",
+              "contributing/kml-format"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Hourly auto-updating KML files via GitHub Actions",
+    "Direct raw URL access for GIS software import",
+    "Interactive web interface with map preview",
+    "SafeAirspace aviation risk warnings with country polygons and NOTAMs",
+    "Real-time Israel rocket alert zones updated every 5 minutes",
+    "ICE protest event mapping from Mobilize.us",
+    "Cloudflare Pages hosting with zero cost"
+  ],
+  "publicApiSurface": [
+    "GET https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml",
+    "GET https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/israel-alerts.kml",
+    "GET https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/mobilize-events.kml",
+    "GET /kml-manifest.json",
+    "scripts/update-kml.js — updateSafeAirspace()",
+    "scripts/update-alerts.js — updateAlerts()",
+    "scripts/update-mobilize.js — updateMobilizeEvents()",
+    "scripts/generate-manifest.js — generateManifest()"
+  ]
+}

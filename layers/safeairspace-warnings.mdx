@@ -1,0 +1,78 @@
+---
+title: "SafeAirspace Warnings"
+description: "Aviation risk levels and NOTAMs by country, sourced from SafeAirspace.net"
+---
+
+The SafeAirspace Warnings layer shows country-level aviation risk ratings and active NOTAMs from [SafeAirspace.net](https://safeairspace.net). Each country with an active advisory is rendered as a filled polygon colored by risk level. Clicking a polygon opens a popup with the warning summary and a table of active NOTAMs.
+
+## Direct URL
+
+```text
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+```
+
+## Data source
+
+| Property | Value |
+|----------|-------|
+| Source | [SafeAirspace.net](https://safeairspace.net) |
+| Country boundaries | [Natural Earth via datasets/geo-countries](https://github.com/datasets/geo-countries) |
+| Update frequency | Hourly via GitHub Actions |
+| File size | ~3.4 MB |
+| License | Fair use — factual data aggregation |
+
+## Risk levels
+
+SafeAirspace assigns each country one of four risk levels. The KML layer uses these levels to determine polygon fill color.
+
+| Level | Label | Fill color | Use |
+|-------|-------|------------|-----|
+| 1 | Do Not Fly | Red | Active conflict, shoot-down risk, complete airspace closure |
+| 2 | High Risk | Orange | Significant ongoing threat, airlines avoiding the area |
+| 3 | Caution | Yellow | Elevated risk requiring heightened situational awareness |
+| 4 | Monitor | Transparent (green outline only) | Situation developing, no immediate threat |
+
+<Note>
+  Folders for Level 1 and Level 2 are expanded by default in the KML file. Level 3 and Level 4 folders are collapsed.
+</Note>
+
+## KML structure
+
+The file is organized into four `<Folder>` elements, one per risk level. Each folder label includes the count of countries at that level — for example, `Level 1 - Do Not Fly (3)`.
+
+Within each folder, each country is a `<Placemark>` containing:
+
+- **Country polygon** — drawn from Natural Earth GeoJSON boundaries, converted to KML `<Polygon>` or `<MultiGeometry>`
+- **Risk level** — stored in `<ExtendedData>` as `RiskLevel` (integer) and `RiskLabel` (string)
+- **ISO3 code** — stored as `ISO3` in `<ExtendedData>`
+- **Warning summary** — HTML-formatted text scraped from SafeAirspace.net
+- **Active NOTAMs table** — source, reference number, issued date, valid-to date, and plain-English summary for each NOTAM
+- **SafeAirspace link** — direct link to the country page on SafeAirspace.net
+
+## Regional groupings
+
+In addition to individual countries, SafeAirspace sometimes issues advisories for named regions. The layer supports these by combining the polygons of all member countries into a single `<MultiGeometry>`.
+
+Supported regions include:
+
+- **Americas** — Central America, Caribbean, South America
+- **Africa** — West Africa, East Africa, Horn of Africa, Sahel, North Africa, Southern Africa, Central Africa
+- **Middle East** — Middle East, Gulf States, Levant, Persian Gulf
+- **Europe** — Balkans, Baltic States, Caucasus, Eastern Europe, Scandinavia, Nordic
+- **Asia** — Southeast Asia, South Asia, Central Asia, East Asia
+- **Oceania** — Oceania, Pacific, Melanesia, Polynesia
+
+## Use cases
+
+- **Flight planning** — identify countries with active risk advisories before filing a route
+- **Drone operations** — check whether a destination country has active airspace restrictions
+- **Aviation risk monitoring** — track how advisories change over time across regions
+
+<CardGroup cols={2}>
+  <Card title="Israel Rocket Alerts" icon="triangle-exclamation" href="/layers/israel-alerts">
+    Real-time alert zones updated every 5 minutes
+  </Card>
+  <Card title="Layers overview" icon="layer-group" href="/layers/overview">
+    All available KML layers with direct URLs
+  </Card>
+</CardGroup>

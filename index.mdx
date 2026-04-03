@@ -1,97 +1,56 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "MapPipeline"
+description: "Auto-updating KML repository for GIS applications. Import live geospatial data directly via URL into Google Earth, QGIS, ArcGIS, ForeFlight, and more."
 ---
 
-## Setting up
+MapPipeline automatically fetches geospatial data from multiple sources, converts it to KML format, and serves it via direct URLs — so your maps always show the latest data without any manual updates.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Copy a KML URL and import it into your GIS software in under 2 minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Available Layers" icon="layer-group" href="/layers/overview">
+    Browse aviation warnings, rocket alerts, event maps, and more
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Import into GIS apps" icon="map" href="/guides/gis-applications">
+    Step-by-step guides for Google Earth, QGIS, ArcGIS, and flight planning apps
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Add a new data source" icon="code" href="/contributing/adding-sources">
+    Contribute a new KML layer to the pipeline
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Get started in 3 steps
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Browse available layers">
+    Visit [mappipeline.com](https://mappipeline.com) or the [layers overview](/layers/overview) to find the data you need.
+  </Step>
+  <Step title="Copy the KML URL">
+    Each layer has a direct raw URL. Copy it from the web interface or the documentation.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+    ```
+    https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml
+    ```
+  </Step>
+  <Step title="Import into your application">
+    Paste the URL into your GIS software. The data updates automatically — no need to re-import.
 
-## Need inspiration?
+    - **Google Earth Pro**: File → Open → Enter URL
+    - **QGIS**: Layer → Add Layer → Add Vector Layer → Protocol: HTTP(S)
+    - **ArcGIS**: Add Data → Data From Path
+    - **ForeFlight / Garmin Pilot**: Add as custom map layer
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Available layers
+
+| Layer | Update Frequency | Description |
+|-------|-----------------|-------------|
+| [SafeAirspace Warnings](/layers/safeairspace-warnings) | Hourly | Aviation risk levels and NOTAMs by country |
+| [Israel Rocket Alerts](/layers/israel-alerts) | Every 5 minutes | Real-time rocket alert zones with polygon boundaries |
+| [ICE Protest Events](/layers/mobilize-events) | Hourly | Protest and activism event locations |
+
+<Info>
+  All KML files are publicly accessible — no account or API key required.
+</Info>

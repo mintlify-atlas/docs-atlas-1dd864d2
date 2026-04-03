@@ -1,0 +1,83 @@
+---
+title: "ICE Protest Events"
+description: "Protest and activism events related to ICE, sourced from Mobilize.us"
+---
+
+The ICE Protest Events layer shows protest and activism events related to ICE from [Mobilize.us](https://www.mobilize.us/map/?q=ICE). Each event is a pin on the map with a popup containing the event name, date and time, location, organizing group, description, and a link back to the Mobilize.us event page.
+
+## Direct URL
+
+```text
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/mobilize-events.kml
+```
+
+## Data source
+
+| Property | Value |
+|----------|-------|
+| Source | [Mobilize.us](https://www.mobilize.us/map/?q=ICE) |
+| Update frequency | Hourly via GitHub Actions |
+| File size | ~1.4 MB |
+| License | Fair use — public event data |
+
+## Location precision
+
+Mobilize.us provides a `location_specificity` value for each event marker indicating how precisely the coordinates represent the actual event location. The KML layer uses this value to set pin color.
+
+| `location_specificity` | Pin color | Meaning |
+|------------------------|-----------|---------|
+| `exact` | Red | Street-level address |
+| `approximate` | Yellow | City-level location |
+| `zipcode` | Orange | ZIP code centroid |
+
+<Tip>
+  Red pins have a confirmed street address. Yellow and orange pins indicate the event organizer has not published a precise location — check the Mobilize.us event page for details.
+</Tip>
+
+## Popup content
+
+Clicking a pin opens a popup with:
+
+- **Event name**
+- **When** — full date and start time with timezone (e.g., `Saturday, April 5, 2025 at 2:00 PM CDT`)
+- **Where** — venue name, street address, city, state, and ZIP code
+- **Organized by** — name of the organizing group
+- **About** — event description from Mobilize.us, when available
+- **Link** — direct link to the event page at `https://www.mobilize.us/event/{id}/`
+
+If full event details cannot be fetched for an individual event, the pin is still placed at the marker coordinates using a red diamond icon, and the popup shows the event ID and a link to the Mobilize.us page.
+
+## KML structure
+
+Each event is a `<Placemark>` containing:
+
+- A `<Point>` with `lng,lat,0` coordinates from the Mobilize.us map marker
+- A `<styleUrl>` referencing `#exact`, `#approximate`, or `#zipcode`
+- `<ExtendedData>` fields: `EventID`, `Organization`, and `LocationType`
+
+## Configuration
+
+Two environment variables control the update script's behavior:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MOBILIZE_SEARCH_URL` | `https://www.mobilize.us/map/?q=ICE` | Mobilize.us search URL to scrape event markers from |
+| `MOBILIZE_MAX_EVENTS` | `0` (unlimited) | Maximum number of events to fetch; set to a positive integer to limit |
+
+<Note>
+  Changing `MOBILIZE_SEARCH_URL` to a different Mobilize.us search query (e.g., `?q=climate`) will generate a KML for that topic instead. This requires modifying the GitHub Actions workflow or running the script locally.
+</Note>
+
+## Use cases
+
+- **Event tracking** — monitor upcoming protest activity in a geographic area
+- **Civic monitoring** — overlay event locations with other data layers in GIS software
+
+<CardGroup cols={2}>
+  <Card title="SafeAirspace Warnings" icon="plane" href="/layers/safeairspace-warnings">
+    Country-level aviation risk ratings and NOTAMs
+  </Card>
+  <Card title="Layers overview" icon="layer-group" href="/layers/overview">
+    All available KML layers with direct URLs
+  </Card>
+</CardGroup>

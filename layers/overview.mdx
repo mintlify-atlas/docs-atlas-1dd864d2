@@ -1,0 +1,36 @@
+---
+title: "Layers overview"
+description: "All available KML data layers — their sources, update frequencies, and direct URLs"
+---
+
+MapPipeline maintains three KML layers that are updated automatically on fixed schedules. Each layer is a static file served from GitHub that you can import into any KML-compatible application using a permanent URL. No API key or login is required.
+
+## All layers
+
+| Layer | Source | Update frequency | File size | Direct URL |
+|-------|--------|-----------------|-----------|------------|
+| SafeAirspace Warnings | SafeAirspace.net | Hourly | ~3.4 MB | [safeairspace-warnings.kml](https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/safeairspace-warnings.kml) |
+| Israel Rocket Alerts | rocketalert.live + tzevaadom | Every 5 minutes | ~34 KB | [israel-alerts.kml](https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/israel-alerts.kml) |
+| ICE Protest Events | Mobilize.us | Hourly | ~1.4 MB | [mobilize-events.kml](https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/mobilize-events.kml) |
+
+## How layers stay current
+
+GitHub Actions workflows run on a cron schedule and execute Node.js scripts that fetch fresh data from each source API or website. The scripts convert the data into KML, then commit the updated file to the repository. Because the raw GitHub URL for each file is permanent, any application that has imported the URL will receive the latest data the next time it refreshes.
+
+<Note>
+  File sizes vary as content changes. The sizes above reflect the manifest at last documentation update.
+</Note>
+
+## Layer pages
+
+<CardGroup cols={1}>
+  <Card title="SafeAirspace Warnings" icon="plane" href="/layers/safeairspace-warnings">
+    Country-level aviation risk ratings and active NOTAMs from SafeAirspace.net. Polygon boundaries colored by risk level (Do Not Fly, High Risk, Caution, Monitor). Updated hourly.
+  </Card>
+  <Card title="Israel Rocket Alerts" icon="triangle-exclamation" href="/layers/israel-alerts">
+    Real-time rocket and missile alert zones in Israel with polygon boundaries. Zones are colored by alert age and cleared automatically after 4 hours. Updated every 5 minutes.
+  </Card>
+  <Card title="ICE Protest Events" icon="location-dot" href="/layers/mobilize-events">
+    Protest and activism events related to ICE, sourced from Mobilize.us. Pins colored by location precision (street-level, city-level, ZIP code). Updated hourly.
+  </Card>
+</CardGroup>

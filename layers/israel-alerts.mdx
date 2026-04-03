@@ -1,0 +1,85 @@
+---
+title: "Israel Rocket Alerts"
+description: "Real-time rocket and missile alerts in Israel with polygon zone boundaries"
+---
+
+The Israel Rocket Alerts layer shows active rocket and missile alert zones in Israel as filled polygons. Each polygon corresponds to an alerted city or area and is colored based on how recently the alert was issued. Alerts are pulled from the [rocketalert.live](https://rocketalert.live) API and matched to polygon boundaries from [tzevaadom.co.il](https://www.tzevaadom.co.il).
+
+## Direct URL
+
+```text
+https://raw.githubusercontent.com/TannerTunstall/MapPipeline/main/kmls/israel-alerts.kml
+```
+
+## Data source
+
+| Property | Value |
+|----------|-------|
+| Alert data | [rocketalert.live API](https://agg.rocketalert.live/api/v2/alerts/real-time/cached) |
+| Polygon boundaries | [tzevaadom.co.il](https://www.tzevaadom.co.il/static/polygons.json) |
+| Update frequency | Every 5 minutes via GitHub Actions |
+| Alert retention | 4 hours — alerts older than 4 hours are automatically removed |
+| File size | ~34 KB |
+| License | Public safety data |
+
+## Alert types
+
+The API returns an `alertTypeId` field for each alert. The layer maps these IDs to human-readable type names displayed in the popup.
+
+| `alertTypeId` | Type name |
+|--------------|-----------|
+| `1` | Rocket Fire |
+| `2` | Hostile Aircraft Intrusion |
+| Any other value | Red Alert |
+
+## Polygon styles
+
+Polygons are colored based on the age of the alert at the time the KML was last generated. The style ID is applied as `<styleUrl>` on each `<Placemark>`.
+
+| Style ID | Age range | Fill color |
+|----------|-----------|------------|
+| `poly-critical` | Less than 5 minutes | Red |
+| `poly-recent` | 5–30 minutes | Orange |
+| `poly-moderate` | 30–120 minutes | Yellow |
+| `poly-old` | More than 2 hours | Gray |
+
+<Warning>
+  Colors reflect alert age at generation time, not at the moment you view the file. Import the layer with auto-refresh enabled to keep colors current.
+</Warning>
+
+## Popup content
+
+Clicking an alert zone opens a popup with the following fields:
+
+- **Type** — alert type name (Rocket Fire, Hostile Aircraft Intrusion, or Red Alert)
+- **Location** — English name of the alerted city or area
+- **Hebrew name** — original Hebrew location name (shown when different from the English name)
+- **Region** — the broader administrative region the location belongs to
+- **Date** — alert date in Israel timezone
+- **Elapsed** — how long ago the alert was issued (e.g., `12 min ago`, `2h 5m ago`)
+- **Shelter time** — countdown to shelter in seconds, when available
+- **Alert time in multiple timezones** — Israel, US Central, London, and Singapore
+
+## KML structure
+
+The file contains a single `<Folder>` named `Alert Zones` listing all currently active zones. Each `<Placemark>` includes:
+
+- A `<Polygon>` element with coordinates from tzevaadom polygon data (converted from `[lat, lng]` to KML's `lng,lat,0` format)
+- A `<TimeStamp>` element with the alert time in ISO 8601 format
+- A `<styleUrl>` referencing one of the four age-based styles
+
+If the API is unreachable during an update run, the script regenerates the KML from a local cache, applying the same 4-hour retention filter. This means the file always reflects the most recent data available even during API outages.
+
+## Use cases
+
+- **Situational awareness** — monitor active alert zones during escalations
+- **Security monitoring** — overlay alerts on other geospatial data in GIS software
+
+<CardGroup cols={2}>
+  <Card title="SafeAirspace Warnings" icon="plane" href="/layers/safeairspace-warnings">
+    Country-level aviation risk ratings and NOTAMs
+  </Card>
+  <Card title="Layers overview" icon="layer-group" href="/layers/overview">
+    All available KML layers with direct URLs
+  </Card>
+</CardGroup>
